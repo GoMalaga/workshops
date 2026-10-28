@@ -6,6 +6,9 @@ la lógica pura y sus tests, sin HTTP todavía.
 > Invariante que gobierna todo: **el stock nunca baja de cero; nunca se reserva
 > más de lo que hay.**
 
+La guía de la sesión, las slides en PDF para leer con el repo al lado:
+[guia.pdf](guia.pdf).
+
 ## Antes de empezar (Bloque 0)
 
 Todos los comandos de este taller se ejecutan desde la carpeta `go1/` del repo.
