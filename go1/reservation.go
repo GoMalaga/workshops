@@ -8,7 +8,7 @@ type Status int
 const (
 	Held Status = iota
 	Confirmed
-	// TODO: one state is missing. The tests know its name.
+	Canceled
 )
 
 // String makes a Status print with its name.
@@ -20,6 +20,8 @@ func (s Status) String() string {
 		return "Held"
 	case Confirmed:
 		return "Confirmed"
+	case Canceled:
+		return "Canceled"
 	default:
 		return "Unknown"
 	}
@@ -45,13 +47,19 @@ type Reservation struct {
 // Only legal from Held; from any other state it returns ErrIllegalTransition.
 // Hint: POINTER receiver (r *Reservation) because you MUTATE the state.
 func (r *Reservation) confirm() error {
-	// TODO: implement
-	return errors.New("TODO: confirm")
+	if r.Status != Held {
+		return ErrIllegalTransition
+	}
+	r.Status = Confirmed
+	return nil
 }
 
 // cancel moves the reservation from Held to Canceled.
 // Only legal from Held; from any other state it returns ErrIllegalTransition.
 func (r *Reservation) cancel() error {
-	// TODO: implement
-	return errors.New("TODO: cancel")
+	if r.Status != Held {
+		return ErrIllegalTransition
+	}
+	r.Status = Canceled
+	return nil
 }
