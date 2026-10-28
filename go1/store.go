@@ -3,6 +3,7 @@ package reservations
 import (
 	"errors"
 	"fmt"
+	"sort"
 )
 
 var (
@@ -51,22 +52,44 @@ func (s *Store) Confirm(reservationID string) error {
 // INVARIANT: never let stock go below zero.
 // ErrProductNotFound if the product doesn't exist; ErrOutOfStock if not enough stock.
 func (s *Store) Reserve(productID string, qty int) (*Reservation, error) {
-	// TODO: implement
-	return nil, errors.New("TODO: Reserve")
+	p := s.products[productID]
+	if p == nil {
+		return nil, ErrProductNotFound
+	}
+	if p.Stock < qty {
+		return nil, ErrOutOfStock
+	}
+	p.Stock -= qty
+	r := &Reservation{ID: s.nextID(), ProductID: productID, Quantity: qty, Status: Held}
+	s.reservations[r.ID] = r
+	return r, nil
 }
 
 // Cancel releases a Held reservation and RETURNS its quantity to the product's stock.
 // Only return stock if the cancel transition was legal.
 // ErrReservationNotFound if the reservation doesn't exist.
 func (s *Store) Cancel(reservationID string) error {
-	// TODO: implement
-	return errors.New("TODO: Cancel")
+	r := s.reservations[reservationID]
+	if r == nil {
+		return ErrReservationNotFound
+	}
+	if err := r.cancel(); err != nil {
+		return err
+	}
+	s.products[r.ProductID].Stock += r.Quantity
+	return nil
 }
 
 // Reservations returns every reservation of a product, sorted by ID.
 // A map has no order: range over it, collect into a slice, then sort.
 // Unknown product or no reservations: an empty slice (not nil), never an error.
 func (s *Store) Reservations(productID string) []*Reservation {
-	// TODO: implement
-	return nil
+	rs := make([]*Reservation, 0)
+	for _, r := range s.reservations {
+		if r.ProductID == productID {
+			rs = append(rs, r)
+		}
+	}
+	sort.Slice(rs, func(i, j int) bool { return rs[i].ID < rs[j].ID })
+	return rs
 }
