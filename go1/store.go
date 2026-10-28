@@ -10,6 +10,7 @@ var (
 	ErrProductNotFound     = errors.New("product not found")
 	ErrOutOfStock          = errors.New("out of stock")
 	ErrReservationNotFound = errors.New("reservation not found")
+	ErrInvalidQuantity     = errors.New("invalid quantity")
 )
 
 // Store holds products and reservations in memory.
@@ -29,6 +30,18 @@ func NewStore() *Store {
 // AddProduct seeds a product. Given, don't touch it.
 func (s *Store) AddProduct(p *Product) {
 	s.products[p.ID] = p
+}
+
+// Stock reports how many units of a product are still available to reserve.
+// Block 3: not in the scaffold. The taquilla has to read stock from outside the
+// package and products is unexported, hence an exported method.
+// ErrProductNotFound if the product doesn't exist.
+func (s *Store) Stock(productID string) (int, error) {
+	p := s.products[productID]
+	if p == nil {
+		return 0, ErrProductNotFound
+	}
+	return p.Stock, nil
 }
 
 // nextID returns a fresh reservation ID: r1, r2, r3...
@@ -51,7 +64,12 @@ func (s *Store) Confirm(reservationID string) error {
 // Reserve checks stock, decrements it, and records a Held reservation.
 // INVARIANT: never let stock go below zero.
 // ErrProductNotFound if the product doesn't exist; ErrOutOfStock if not enough stock.
+// Block 3: ErrInvalidQuantity if qty is zero or negative. Not in the scaffold:
+// without this guard Reserve("p1", -3) ADDS stock and every test stays green.
 func (s *Store) Reserve(productID string, qty int) (*Reservation, error) {
+	if qty <= 0 {
+		return nil, ErrInvalidQuantity
+	}
 	p := s.products[productID]
 	if p == nil {
 		return nil, ErrProductNotFound

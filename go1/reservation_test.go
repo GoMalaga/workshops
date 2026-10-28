@@ -70,3 +70,11 @@ func TestConfirm_alreadyCanceled_isIllegal(t *testing.T) {
 		t.Errorf("expected ErrIllegalTransition, got: %v", err)
 	}
 }
+
+func TestCancel_alreadyCanceled_isIllegal(t *testing.T) {
+	r := newHeldReservation()
+	_ = r.cancel()
+	if err := r.cancel(); !errors.Is(err, ErrIllegalTransition) {
+		t.Errorf("expected ErrIllegalTransition, got: %v", err)
+	}
+}
