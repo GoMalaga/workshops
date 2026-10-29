@@ -18,6 +18,7 @@ cd workshops/go1
 
 ## Checkpoints
 
-Los puntos de rescate se publican como tags a lo largo de cada sesión, no
-antes. Si te quedas descolgado, `git fetch --tags` y salta al que toque; el
+Los puntos de rescate de cada taller son tags. Se publican a lo largo de su
+sesión, y una vez dado el taller quedan todos. Si te quedas descolgado o
+quieres comparar con la solución, `git fetch --tags` y salta al que toque; el
 README de cada taller dice cuáles hay.

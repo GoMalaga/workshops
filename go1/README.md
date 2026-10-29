@@ -142,8 +142,9 @@ go test -race ./...  # (pista para la semana que viene...)
 
 ## Checkpoints (por si te atascas)
 
-Si te quedas descolgado, puedes saltar a un punto de rescate. Los tags se
-publican a lo largo de la sesión, así que haz `git fetch --tags` antes:
+Si te quedas descolgado, puedes saltar a un punto de rescate. El taller se
+dio el 2026-10-28 y los cuatro tags están publicados; haz `git fetch --tags`
+y salta al que toque:
 
 - `git checkout go1-step0`: punto de partida (todo por hacer)
 - `git checkout go1-step1`: Bloque 1 ya resuelto (empieza el Bloque 2 desde aquí)
