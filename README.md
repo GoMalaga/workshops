@@ -7,6 +7,7 @@ en el que nunca se vende más de lo que hay.
 | Taller | Carpeta | Qué se construye                                   |
 |--------|---------|----------------------------------------------------|
 | Go 1   | `go1/`  | El motor: tipos, errores y tests, sin HTTP todavía |
+| Go 2   | `go2/`  | El motor guardado en SQLite y servido por HTTP     |
 
 Cada carpeta es un módulo de Go independiente con su propio README, que es
 donde empieza cada taller:
