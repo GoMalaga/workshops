@@ -2,6 +2,7 @@ package reservations
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -33,15 +34,18 @@ type reserveRequest struct {
 }
 
 // GET /products -> 200 y el catálogo como un array JSON.
-// Modelo: product, sin entrada que leer.
 func (a *api) products(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, errorBody("TODO: GET /products"))
+	ps, err := a.store.Products()
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, ps)
 }
 
 // GET /products/{id} -> 200 y el producto, o 404.
 // EJEMPLO RESUELTO de un handler: lee la entrada (aquí, la ruta), llama al
-// Store, le pasa cualquier error a writeError y escribe JSON. El handler viene
-// escrito; writeError, más abajo, es tuyo: hasta entonces responde 500 a todo.
+// Store, convierte el error en un código de estado y escribe JSON.
 func (a *api) product(w http.ResponseWriter, r *http.Request) {
 	p, err := a.store.Product(r.PathValue("id"))
 	if err != nil {
@@ -52,31 +56,50 @@ func (a *api) product(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /reserve -> 201 y la reserva nueva.
-// El cuerpo llega como un reserveRequest. Si no es JSON válido es culpa del
-// cliente: 400 y un mensaje, sin llegar al Store. Los errores del Store se
-// convierten en códigos en writeError (404, 409, 400).
+// Un cuerpo que no es JSON válido es culpa del cliente: 400 y un mensaje. Los
+// errores del Store se convierten en códigos en writeError (404, 409, 400).
 func (a *api) reserve(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, errorBody("TODO: POST /reserve"))
+	var req reserveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, errorBody("invalid JSON: "+err.Error()))
+		return
+	}
+	res, err := a.store.Reserve(req.ProductID, req.Quantity)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, res)
 }
 
 // POST /reservations/{id}/confirm -> 200 y la reserva como queda.
-// El id viene en la ruta, como en product. Acaba en respondWithReservation,
-// que escribes más abajo.
 func (a *api) confirm(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, errorBody("TODO: POST /reservations/{id}/confirm"))
+	id := r.PathValue("id")
+	if err := a.store.Confirm(id); err != nil {
+		writeError(w, err)
+		return
+	}
+	a.respondWithReservation(w, id)
 }
 
 // POST /reservations/{id}/cancel -> 200 y la reserva como queda.
-// La misma forma que confirm, con el otro método del Store.
 func (a *api) cancel(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, errorBody("TODO: POST /reservations/{id}/cancel"))
+	id := r.PathValue("id")
+	if err := a.store.Cancel(id); err != nil {
+		writeError(w, err)
+		return
+	}
+	a.respondWithReservation(w, id)
 }
 
 // respondWithReservation vuelve a leer una reserva y la escribe con un 200.
-// Confirm y Cancel no devuelven la reserva, solo un error, así que el handler
-// la lee otra vez. confirm y cancel acaban los dos aquí.
 func (a *api) respondWithReservation(w http.ResponseWriter, id string) {
-	writeJSON(w, http.StatusNotImplemented, errorBody("TODO: respondWithReservation"))
+	res, err := a.store.Reservation(id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // writeJSON pone el tipo de contenido y el código de estado, y escribe v como
@@ -92,12 +115,17 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // Lo que no existe es 404, una regla del dominio que dice que no es 409
 // (conflicto), una entrada mal formada es 400 y todo lo demás es 500: es culpa
 // nuestra, no del cliente.
-// Los errores son los cinco de reservation.go; errors.Is(err, ErrOutOfStock)
-// dice cuál tienes (añade "errors" a los import de arriba: Go no acepta un
-// import sin usar). Todos los handlers acaban aquí cuando algo va mal, así
-// que la tabla está en un solo sitio.
 func writeError(w http.ResponseWriter, err error) {
-	writeJSON(w, http.StatusInternalServerError, errorBody("TODO: writeError: "+err.Error()))
+	status := http.StatusInternalServerError
+	switch {
+	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrReservationNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, ErrOutOfStock), errors.Is(err, ErrIllegalTransition):
+		status = http.StatusConflict
+	case errors.Is(err, ErrInvalidQuantity):
+		status = http.StatusBadRequest
+	}
+	writeJSON(w, status, errorBody(err.Error()))
 }
 
 // errorBody es la forma de todas las respuestas de error:
