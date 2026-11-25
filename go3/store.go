@@ -36,6 +36,7 @@ const (
 	sqlSelectReservation  = `SELECT id, product_id, quantity, status FROM reservations WHERE id = ?`
 	sqlUpdateStatus       = `UPDATE reservations SET status = ? WHERE id = ?`
 	sqlSelectReservations = `SELECT id, product_id, quantity, status FROM reservations WHERE product_id = ? ORDER BY id`
+	sqlCountConfirmed     = `SELECT COUNT(*) FROM reservations WHERE product_id = ? AND status = ?`
 )
 
 // Store es el Store de la sesión 1 con los mapas cambiados por un fichero
@@ -263,4 +264,17 @@ func (s *Store) Reservations(productID string) ([]*Reservation, error) {
 		rs = append(rs, r)
 	}
 	return rs, rows.Err()
+}
+
+// CountConfirmed dice cuántas reservas confirmadas tiene un producto.
+// ErrProductNotFound si el producto no existe: COUNT devuelve 0 tanto si no hay
+// reservas como si no hay producto, así que antes se comprueba con Stock.
+// Ejercicio para casa: el método que se escribe de cero.
+func (s *Store) CountConfirmed(productID string) (int, error) {
+	if _, err := s.Stock(productID); err != nil {
+		return 0, err
+	}
+	var n int
+	err := s.db.QueryRow(sqlCountConfirmed, productID, Confirmed).Scan(&n)
+	return n, err
 }

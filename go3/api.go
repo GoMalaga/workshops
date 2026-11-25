@@ -14,6 +14,7 @@ func NewHandler(store *Store) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /products", a.products)
 	mux.HandleFunc("GET /products/{id}", a.product)
+	mux.HandleFunc("GET /products/{id}/confirmed", a.confirmedCount)
 	mux.HandleFunc("POST /reserve", a.reserve)
 	mux.HandleFunc("POST /reservations/{id}/confirm", a.confirm)
 	mux.HandleFunc("POST /reservations/{id}/cancel", a.cancel)
@@ -31,6 +32,13 @@ type api struct {
 type reserveRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
+}
+
+// confirmedResponse es el cuerpo de GET /products/{id}/confirmed:
+// {"product_id": "p1", "confirmed": 2}.
+type confirmedResponse struct {
+	ProductID string `json:"product_id"`
+	Confirmed int    `json:"confirmed"`
 }
 
 // GET /products -> 200 y el catálogo como un array JSON.
@@ -53,6 +61,19 @@ func (a *api) product(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
+}
+
+// GET /products/{id}/confirmed -> 200 y cuántas reservas confirmadas tiene el
+// producto, o 404 si el producto no existe.
+// Ejercicio para casa: el endpoint que se escribe de cero.
+func (a *api) confirmedCount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	n, err := a.store.CountConfirmed(id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, confirmedResponse{ProductID: id, Confirmed: n})
 }
 
 // POST /reserve -> 201 y la reserva nueva.
